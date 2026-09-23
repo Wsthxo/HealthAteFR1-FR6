@@ -1,0 +1,1222 @@
+<!DOCTYPE html>
+<!-- cspell:words HEALTHATE MACRONUTRIENTS micronutrients glycemic hypercholesterolemia colorectal Nori Anisakis -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=393, initial-scale=1.0">
+<title>HEALTHATE — FR1 Food Analysis</title>
+<style>
+/* ── Design Tokens ── */
+:root {
+  --bg:            #F4F1EC;
+  --surface:       #FFFFFF;
+  --border:        #EAE6DF;
+  --text-primary:  #1F2B1F;
+  --text-secondary:#5A6E5D;
+  --text-muted:    #8A968B;
+  --accent:        #2E6F40;
+  --accent-light:  #EAF5EC;
+  --warn:          #92400E;
+  --warn-light:    #FEF3C7;
+  --danger:        #991B1B;
+  --danger-light:  #FEE2E2;
+  --r-sm:  10px;
+  --r-md:  16px;
+  --r-lg:  24px;
+  --r-pill:999px;
+}
+
+/* ── Reset ── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",sans-serif;
+  background:#CCC8C0;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  min-height:100vh;padding:24px;gap:16px;
+}
+
+/* ── Phone shell ── */
+.phone{
+  width:393px;height:852px;
+  background:var(--bg);
+  border-radius:44px;
+  overflow:hidden;
+  position:relative;
+  box-shadow:0 12px 48px rgba(0,0,0,.22);
+  flex-shrink:0;
+}
+
+/* ── Screen routing ── */
+.screen{
+  position:absolute;inset:0;
+  display:none;flex-direction:column;
+  background:var(--bg);
+  overflow:hidden;
+}
+.screen.active{display:flex;}
+
+/* ── Status bar ── */
+.status-bar{
+  height:50px;padding:14px 24px 0;
+  display:flex;align-items:center;justify-content:space-between;
+  flex-shrink:0;
+}
+.status-time{font-size:15px;font-weight:600;color:var(--text-primary);}
+.status-icons{display:flex;align-items:center;gap:6px;}
+
+/* ── Top nav ── */
+.top-nav{
+  padding:6px 20px 8px;
+  display:flex;align-items:center;gap:12px;
+  flex-shrink:0;
+}
+.btn-back{
+  width:36px;height:36px;border-radius:var(--r-pill);
+  background:var(--surface);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;flex-shrink:0;
+  transition:background .14s;
+}
+.btn-back:hover{background:#ece8e1;}
+.top-nav-title{font-size:17px;font-weight:700;color:var(--text-primary);}
+
+/* ── Scrollable body ── */
+.screen-body{
+  flex:1;overflow-y:auto;overflow-x:hidden;
+  padding:0 20px;
+  -webkit-overflow-scrolling:touch;
+}
+.screen-body::-webkit-scrollbar{display:none;}
+
+/* ── Bottom action bar ── */
+.bottom-actions{
+  padding:10px 20px 28px;
+  display:flex;gap:8px;flex-shrink:0;
+}
+.btn-outline{
+  flex:1;height:36px;border-radius:var(--r-pill);
+  background:var(--surface);border:1px solid var(--border);
+  font-size:13px;font-weight:500;color:var(--text-secondary);
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  cursor:pointer;transition:background .14s;
+}
+.btn-outline:hover{background:#f2ede6;}
+.btn-primary{
+  flex:1;height:36px;border-radius:var(--r-pill);
+  background:var(--accent);border:none;
+  font-size:13px;font-weight:700;color:#fff;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  cursor:pointer;transition:background .14s;
+}
+.btn-primary:hover{background:#255c35;}
+.btn-primary:disabled{background:#8A968B;cursor:not-allowed;}
+
+/* ── Cards ── */
+.card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--r-md);
+  overflow:hidden;
+}
+
+/* ── Typography ── */
+.heading-xl{font-size:30px;font-weight:800;color:var(--text-primary);line-height:1.15;letter-spacing:-.5px;}
+.heading-lg{font-size:22px;font-weight:700;color:var(--text-primary);line-height:1.2;}
+.heading-md{font-size:17px;font-weight:700;color:var(--text-primary);}
+.heading-sm{font-size:14px;font-weight:600;color:var(--text-primary);}
+.body-md{font-size:14px;color:var(--text-secondary);line-height:1.5;}
+.body-sm{font-size:12px;color:var(--text-muted);line-height:1.4;}
+.label{font-size:10px;font-weight:700;color:var(--text-muted);letter-spacing:.7px;text-transform:uppercase;}
+
+/* ── Tags / Chips ── */
+.tag{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:3px 9px;border-radius:var(--r-pill);
+  background:var(--accent-light);color:var(--accent);
+  font-size:11px;font-weight:700;
+}
+.tag-warn{background:var(--warn-light);color:var(--warn);}
+.tag-danger{background:var(--danger-light);color:var(--danger);}
+.tag-outline{background:transparent;border:1px solid var(--border);color:var(--text-secondary);}
+
+/* ── Nutrient bar ── */
+.nutrient-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.nutrient-label{font-size:13px;color:var(--text-secondary);width:76px;flex-shrink:0;}
+.nutrient-track{flex:1;height:6px;background:var(--border);border-radius:var(--r-pill);overflow:hidden;}
+.nutrient-fill{height:100%;background:var(--accent);border-radius:var(--r-pill);}
+.nutrient-value{font-size:12px;color:var(--text-muted);width:44px;text-align:right;flex-shrink:0;}
+
+/* ── Progress ring helper ── */
+.ring-wrap{display:flex;align-items:center;justify-content:center;}
+
+/* ── Macro chip row ── */
+.macro-row{display:flex;gap:8px;}
+.macro-chip{
+  flex:1;background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r-sm);padding:10px 8px;text-align:center;
+}
+.macro-chip .mc-val{font-size:17px;font-weight:800;color:var(--text-primary);line-height:1;}
+.macro-chip .mc-unit{font-size:10px;color:var(--text-muted);}
+.macro-chip .mc-name{font-size:11px;color:var(--text-secondary);margin-top:3px;}
+
+/* ── Warning card ── */
+.warn-card{
+  border:1px solid #FDE68A;border-radius:var(--r-md);
+  background:var(--warn-light);padding:14px 16px;
+  display:flex;gap:12px;margin-bottom:10px;
+}
+.danger-card{
+  border:1px solid #FCA5A5;border-radius:var(--r-md);
+  background:var(--danger-light);padding:14px 16px;
+  display:flex;gap:12px;margin-bottom:10px;
+}
+.info-card{
+  border:1px solid var(--border);border-radius:var(--r-md);
+  background:var(--accent-light);padding:14px 16px;
+  display:flex;gap:12px;margin-bottom:10px;
+}
+
+/* ── Upload zone ── */
+.upload-zone{
+  border:2px dashed var(--border);border-radius:var(--r-lg);
+  background:var(--surface);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:12px;padding:40px 20px;cursor:pointer;
+  transition:border-color .14s,background .14s;
+  position:relative;
+}
+.upload-zone:hover{border-color:var(--accent);background:var(--accent-light);}
+.upload-zone input[type=file]{
+  position:absolute;inset:0;opacity:0;cursor:pointer;
+}
+
+/* ── Image preview ── */
+.food-preview-img{
+  width:100%;height:220px;object-fit:cover;
+  border-radius:var(--r-md);display:block;
+}
+
+/* ── Loading screen styles ── */
+@keyframes spin{to{transform:rotate(360deg);}}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+@keyframes progress-fill{from{width:0%;}to{width:var(--target-w);}}
+.spinner{
+  width:56px;height:56px;border-radius:50%;
+  border:4px solid var(--border);
+  border-top-color:var(--accent);
+  animation:spin .9s linear infinite;
+}
+.dot-pulse{animation:pulse 1.4s ease-in-out infinite;}
+.dot-pulse:nth-child(2){animation-delay:.2s;}
+.dot-pulse:nth-child(3){animation-delay:.4s;}
+
+/* ── Score badge ── */
+.score-badge{
+  width:60px;height:60px;border-radius:50%;
+  background:var(--accent);color:#fff;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+.score-badge.score-warn{background:var(--warn);}
+.score-badge.score-danger{background:var(--danger);}
+
+/* ── Ingredient list item ── */
+.ingredient-item{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 16px;border-bottom:1px solid var(--border);
+}
+.ingredient-item:last-child{border-bottom:none;}
+
+/* ── Bottom nav ── */
+.bottom-nav{
+  height:80px;background:var(--surface);
+  border-top:1px solid var(--border);
+  display:flex;align-items:flex-start;
+  padding-top:10px;flex-shrink:0;
+}
+.nav-item{
+  flex:1;display:flex;flex-direction:column;
+  align-items:center;gap:3px;cursor:pointer;padding:4px 0;
+}
+.nav-item span{font-size:10px;font-weight:500;color:var(--text-muted);}
+.nav-item.active span{color:var(--accent);}
+
+/* ── Helpers ── */
+.mt-4{margin-top:4px;} .mt-8{margin-top:8px;} .mt-12{margin-top:12px;}
+.mt-16{margin-top:16px;} .mt-20{margin-top:20px;}
+.mb-4{margin-bottom:4px;} .mb-8{margin-bottom:8px;} .mb-12{margin-bottom:12px;}
+.mb-16{margin-bottom:16px;} .mb-20{margin-bottom:20px;}
+.flex{display:flex;} .flex-col{flex-direction:column;}
+.items-center{align-items:center;} .justify-between{justify-content:space-between;}
+.gap-8{gap:8px;} .gap-12{gap:12px;}
+.w-full{width:100%;}
+.text-center{text-align:center;}
+.divider{height:1px;background:var(--border);margin:0 -20px;}
+
+/* Added camera support from FR1 while keeping index.html as base */
+.camera-view{
+  position:relative;width:100%;height:100%;
+  background:#000;display:flex;flex-direction:column;
+  justify-content:space-between;overflow:hidden;
+}
+.camera-video{
+  position:absolute;inset:0;width:100%;height:100%;
+  object-fit:cover;
+}
+.camera-overlay{
+  position:absolute;inset:70px 24px 130px;
+  border:2px dashed rgba(255,255,255,0.7);
+  border-radius:28px;pointer-events:none;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 0 2000px rgba(0,0,0,0.35);
+}
+.shutter-btn{
+  width:72px;height:72px;border-radius:50%;
+  border:4px solid #fff;background:rgba(255,255,255,0.2);
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:transform .1s, background .1s;
+}
+.shutter-inner{width:54px;height:54px;border-radius:50%;background:#fff;}
+</style>
+</head>
+<body>
+
+  <a href="FR6.html" style="position:absolute;top:12px;left:12px;font-size:12px;color:#000000;">Go to FR6</a >
+<div class="phone">
+<!-- ═══════════ STATUS BAR SNIPPET (reused via JS) ═══════════ -->
+<!-- Injected by renderStatusBar() -->
+
+<!-- PLACEHOLDER_SCREENS -->
+</div>
+
+<!-- Nav dots -->
+<div id="nav-dots" style="display:flex;gap:7px;background:rgba(255,255,255,.88);padding:7px 14px;border-radius:99px;box-shadow:0 2px 12px rgba(0,0,0,.12);">
+</div>
+
+<script>
+/* ─────────────────────────────────────────────────
+   HEALTHATE — FR1 Food Component Analysis Prototype
+   Plain-HTML single-file interactive prototype
+───────────────────────────────────────────────── */
+
+/* ── State ── */
+const state = {
+  currentScreen: 'home',
+  uploadedImageSrc: null,
+  analysisResult: null,
+  mediaStream: null,
+};
+
+/* ── Mock food database for simulated analysis ── */
+const MOCK_FOODS = {
+  default: {
+    name: 'Mixed Dish',
+    emoji: '🍽️',
+    category: 'Prepared Food',
+    servingSize: '250g',
+    healthScore: 72,
+    scoreLabel: 'Good',
+    calories: 420,
+    macros: { protein: 18, carbs: 52, fat: 14, fiber: 6 },
+    nutrients: [
+      { name: 'Sodium',    val: '540mg', pct: 24, warn: true  },
+      { name: 'Sugar',     val: '8g',    pct: 9,  warn: false },
+      { name: 'Sat. Fat',  val: '4g',    pct: 20, warn: true  },
+      { name: 'Vitamin C', val: '12mg',  pct: 13, warn: false },
+      { name: 'Iron',      val: '2.4mg', pct: 13, warn: false },
+      { name: 'Calcium',   val: '80mg',  pct: 6,  warn: false },
+    ],
+    ingredients: [
+      { name: 'Whole Wheat Pasta',  amount: '90g',  flag: null      },
+      { name: 'Tomato Sauce',       amount: '60g',  flag: null      },
+      { name: 'Ground Beef',        amount: '60g',  flag: null      },
+      { name: 'Olive Oil',          amount: '8g',   flag: null      },
+      { name: 'Salt',               amount: '1.2g', flag: 'warn'    },
+      { name: 'Monosodium Glutamate', amount: '0.4g', flag: 'danger' },
+    ],
+    risks: [
+      {
+        level: 'danger',
+        title: 'High Sodium Content',
+        body: 'This dish contains 540mg of sodium — 24% of the recommended daily intake per serving. Regular high-sodium intake is linked to elevated blood pressure and cardiovascular risk.',
+        icon: '🩺',
+      },
+      {
+        level: 'warn',
+        title: 'Contains MSG (Monosodium Glutamate)',
+        body: 'MSG is generally recognized as safe, but some individuals report sensitivity symptoms such as headache or flushing. People with MSG sensitivity should consume with caution.',
+        icon: '⚠️',
+      },
+      {
+        level: 'warn',
+        title: 'Moderate Saturated Fat',
+        body: '4g of saturated fat per serving is 20% of the daily limit. Limit consumption if you are managing cardiovascular health.',
+        icon: '🫀',
+      },
+      {
+        level: 'info',
+        title: 'Good Source of Fiber',
+        body: '6g of dietary fiber supports digestive health and helps maintain stable blood sugar levels.',
+        icon: '✅',
+      },
+    ],
+  },
+};
+
+/* ── Camera Logic ── */
+async function startCamera() {
+  goTo('camera');
+  try {
+    const video = document.getElementById('camera-video');
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('Camera API unavailable');
+    state.mediaStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1080 }, height: { ideal: 1920 } },
+      audio: false
+    });
+    if (video) video.srcObject = state.mediaStream;
+  } catch (err) {
+    alert('Camera access is unavailable. Please allow camera permission or use Upload instead.');
+    goTo('upload');
+  }
+}
+
+function stopCamera() {
+  if (state.mediaStream) {
+    state.mediaStream.getTracks().forEach(track => track.stop());
+    state.mediaStream = null;
+  }
+}
+
+function capturePhoto() {
+  const video = document.getElementById('camera-video');
+  if (!video || !video.videoWidth) {
+    alert('Camera is not ready yet.');
+    return;
+  }
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+  state.uploadedImageSrc = canvas.toDataURL('image/jpeg', 0.9);
+  state.analysisResult = MOCK_FOODS.default;
+
+  const previewImg = document.getElementById('preview-img');
+  if (previewImg) previewImg.src = state.uploadedImageSrc;
+  const nameEl = document.getElementById('preview-food-name');
+  if (nameEl) nameEl.textContent = 'Captured Food Photo';
+  const subEl = document.getElementById('preview-food-sub');
+  if (subEl) subEl.textContent = 'Photo captured from camera';
+  const emojiEl = document.getElementById('preview-emoji');
+  if (emojiEl) emojiEl.textContent = '📷';
+
+  stopCamera();
+  goTo('preview');
+}
+
+/* ── Screen definitions ── */
+const SCREENS = ['home','camera','upload','preview','loading','results','risks'];
+
+/* ── DOM helpers ── */
+const phone = document.querySelector('.phone');
+
+function statusBarHTML() {
+  return `<div class="status-bar">
+    <span class="status-time">9:41</span>
+    <div class="status-icons">
+      <svg width="17" height="12" fill="none"><rect x="0" y="3" width="3" height="9" rx="1" fill="#1F2B1F"/><rect x="4.5" y="2" width="3" height="10" rx="1" fill="#1F2B1F"/><rect x="9" y="1" width="3" height="11" rx="1" fill="#1F2B1F"/><rect x="13.5" y="0" width="3" height="12" rx="1" fill="#1F2B1F"/></svg>
+      <svg width="16" height="12" fill="none"><path d="M8 2.5C10.2 2.5 12.2 3.4 13.6 4.9" stroke="#1F2B1F" stroke-width="1.5" stroke-linecap="round"/><path d="M8 2.5C5.8 2.5 3.8 3.4 2.4 4.9" stroke="#1F2B1F" stroke-width="1.5" stroke-linecap="round"/><circle cx="8" cy="10" r="1.2" fill="#1F2B1F"/></svg>
+      <svg width="25" height="12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.5" stroke="#1F2B1F" stroke-opacity=".45"/><rect x="2" y="2" width="16" height="8" rx="2" fill="#1F2B1F"/><path d="M23 4C23.8 4.4 23.8 7.6 23 8V4Z" fill="#1F2B1F" fill-opacity=".45"/></svg>
+    </div>
+  </div>`;
+}
+
+function backBtnHTML(target, label) {
+  return `<div class="top-nav">
+    <button class="btn-back" onclick="goTo('${target}')">
+      <svg width="18" height="18" fill="none"><path d="M11.5 5L7.5 9l4 4" stroke="#1F2B1F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <span class="top-nav-title">${label}</span>
+  </div>`;
+}
+
+/* ── Navigation ── */
+function goTo(id) {
+  if (state.currentScreen === 'camera' && id !== 'camera') stopCamera();
+  state.currentScreen = id;
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById('s-' + id);
+  if (el) el.classList.add('active');
+  updateDots();
+}
+
+function updateDots() {
+  const dots = document.getElementById('nav-dots');
+  dots.innerHTML = SCREENS.map((id, i) => {
+    const active = state.currentScreen === id;
+    return `<span onclick="goTo('${id}')" style="
+      display:block;height:8px;
+      width:${active ? '20px' : '8px'};
+      border-radius:99px;
+      background:${active ? '#2E6F40' : '#EAE6DF'};
+      cursor:pointer;transition:all .2s;
+    "></span>`;
+  }).join('');
+}
+
+/* ══════════════════════════════════════════════════
+   BUILD SCREENS
+══════════════════════════════════════════════════ */
+
+function buildHomeScreen() {
+  const el = document.createElement('div');
+  el.className = 'screen';
+  el.id = 's-home';
+  el.innerHTML = `
+    ${statusBarHTML()}
+    <!-- Header -->
+    <div style="padding:8px 20px 0;">
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="label mb-4">Welcome back</div>
+          <div class="heading-lg">HEALTHATE</div>
+        </div>
+        <div style="width:40px;height:40px;border-radius:50%;background:var(--accent-light);border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;">
+          <svg width="22" height="22" fill="none"><circle cx="11" cy="8" r="4" stroke="#2E6F40" stroke-width="1.8"/><path d="M3 20c0-4.4 3.6-8 8-8s8 3.6 8 8" stroke="#2E6F40" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="screen-body" style="padding-top:16px;">
+
+      <!-- FR1 Hero card -->
+      <div class="card" style="padding:20px;margin-bottom:12px;background:linear-gradient(135deg,#2E6F40 0%,#1a4a28 100%);border:none;">
+        <div class="label" style="color:rgba(255,255,255,.6);margin-bottom:6px;">FR1 — FOOD ANALYSIS</div>
+        <div style="font-size:20px;font-weight:800;color:#fff;line-height:1.2;margin-bottom:8px;">Analyze Your Food</div>
+        <div style="font-size:13px;color:rgba(255,255,255,.75);line-height:1.5;margin-bottom:16px;">Upload or photograph any food to instantly see its nutritional components and health risk information.</div>
+        <button class="btn-primary" onclick="startCamera()" style="background:rgba(255,255,255,.18);border:1.5px solid rgba(255,255,255,.35);color:#fff;font-weight:700;flex:unset;padding:0 20px;width:100%;">
+          <svg width="16" height="16" fill="none"><path d="M8 3v10M3 8h10" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>
+          Analyze Food Now
+        </button>
+      </div>
+
+      <!-- Quick actions -->
+      <div class="flex gap-8 mb-12">
+        <div class="card" style="flex:1;padding:14px;cursor:pointer;text-align:center;" onclick="startCamera()">
+          <div style="font-size:28px;margin-bottom:6px;">📷</div>
+          <div class="heading-sm" style="font-size:13px;">Take Photo</div>
+          <div class="body-sm mt-4">Camera</div>
+        </div>
+        <div class="card" style="flex:1;padding:14px;cursor:pointer;text-align:center;" onclick="goTo('upload')">
+          <div style="font-size:28px;margin-bottom:6px;">🖼️</div>
+          <div class="heading-sm" style="font-size:13px;">Upload</div>
+          <div class="body-sm mt-4">Gallery</div>
+        </div>
+        <div class="card" style="flex:1;padding:14px;cursor:pointer;text-align:center;" onclick="goTo('results')">
+          <div style="font-size:28px;margin-bottom:6px;">📋</div>
+          <div class="heading-sm" style="font-size:13px;">History</div>
+          <div class="body-sm mt-4">Past scans</div>
+        </div>
+      </div>
+
+      <!-- Recent analysis -->
+      <div class="flex items-center justify-between mb-8">
+        <div class="heading-sm">Recent Analyses</div>
+        <span class="body-sm" style="color:var(--accent);font-weight:600;cursor:pointer;">See all</span>
+      </div>
+      <div class="card" style="margin-bottom:12px;">
+        <div class="ingredient-item" onclick="goTo('results')">
+          <div class="flex items-center gap-12">
+            <div style="width:44px;height:44px;border-radius:10px;background:var(--accent-light);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">🍝</div>
+            <div>
+              <div class="heading-sm" style="font-size:14px;">Mixed Dish</div>
+              <div class="body-sm">420 kcal · Score 72</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-8">
+            <span class="tag">72</span>
+            <svg width="14" height="14" fill="none"><path d="M5 3l4 4-4 4" stroke="#8A968B" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </div>
+        </div>
+        <div class="ingredient-item" onclick="goTo('results')">
+          <div class="flex items-center gap-12">
+            <div style="width:44px;height:44px;border-radius:10px;background:#FEF3C7;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">🥗</div>
+            <div>
+              <div class="heading-sm" style="font-size:14px;">Caesar Salad</div>
+              <div class="body-sm">310 kcal · Score 85</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-8">
+            <span class="tag">85</span>
+            <svg width="14" height="14" fill="none"><path d="M5 3l4 4-4 4" stroke="#8A968B" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Health tip -->
+      <div class="info-card">
+        <div style="font-size:20px;flex-shrink:0;margin-top:2px;">💡</div>
+        <div>
+          <div class="heading-sm mb-4">Did you know?</div>
+          <div class="body-sm">Reading food labels regularly helps you make better dietary choices and identify hidden additives in processed foods.</div>
+        </div>
+      </div>
+
+      <div style="height:8px;"></div>
+    </div>
+
+    <!-- Bottom nav -->
+    <div class="bottom-nav">
+      <div class="nav-item active">
+        <svg width="24" height="24" fill="none"><path d="M3 12L12 4l9 8" stroke="#2E6F40" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 10v9a1 1 0 001 1h4v-5h4v5h4a1 1 0 001-1v-9" stroke="#2E6F40" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span style="color:var(--accent);">Home</span>
+      </div>
+      <div class="nav-item" onclick="goTo('upload')">
+        <svg width="24" height="24" fill="none"><circle cx="12" cy="12" r="8" stroke="#8A968B" stroke-width="1.8"/><path d="M12 8v8M8 12h8" stroke="#8A968B" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span>Analyze</span>
+      </div>
+      <div class="nav-item" onclick="goTo('results')">
+        <svg width="24" height="24" fill="none"><path d="M4 6h16M4 10h16M4 14h16M4 18h10" stroke="#8A968B" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span>Results</span>
+      </div>
+      <div class="nav-item" onclick="goTo('risks')">
+        <svg width="24" height="24" fill="none"><path d="M12 3L2 21h20L12 3z" stroke="#8A968B" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 9v5M12 16.5v.5" stroke="#8A968B" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span>Risks</span>
+      </div>
+    </div>`;
+  return el;
+}
+
+/* ── Screen: Upload ── */
+function buildCameraScreen() {
+  const el = document.createElement('div');
+  el.className = 'screen';
+  el.id = 's-camera';
+  el.innerHTML = `
+    <div class="camera-view">
+      ${statusBarHTML()}
+      <video id="camera-video" class="camera-video" autoplay playsinline></video>
+      <div class="camera-overlay">
+        <span style="color:#fff;font-size:12px;background:rgba(0,0,0,.5);padding:4px 12px;border-radius:12px;">Position food inside frame</span>
+      </div>
+      <div style="position:absolute;top:54px;left:20px;z-index:20;">
+        <button onclick="goTo('home')" style="width:40px;height:40px;border-radius:50%;background:rgba(0,0,0,.5);border:none;color:#fff;cursor:pointer;font-size:18px;">✕</button>
+      </div>
+      <div style="position:absolute;left:0;right:0;bottom:0;padding:24px 20px 30px;display:flex;justify-content:center;align-items:center;z-index:20;background:linear-gradient(transparent,rgba(0,0,0,.75));">
+        <button class="shutter-btn" onclick="capturePhoto()" aria-label="Capture photo"><div class="shutter-inner"></div></button>
+      </div>
+    </div>`;
+  return el;
+}
+
+function buildUploadScreen() {
+  const el = document.createElement('div');
+  el.className = 'screen';
+  el.id = 's-upload';
+  el.innerHTML = `
+    ${statusBarHTML()}
+    ${backBtnHTML('home', 'Analyze Food')}
+    <div class="screen-body" style="padding-top:8px;">
+
+      <div class="label mb-8">STEP 1 OF 3</div>
+      <div class="heading-md mb-4">Upload Food Image</div>
+      <div class="body-md mb-20">Take a photo or choose from your gallery to begin analysis.</div>
+
+      <!-- Upload zone -->
+      <label class="upload-zone mb-16" id="upload-zone">
+        <input type="file" accept="image/*" id="file-input" onchange="handleFileSelect(event)">
+        <div style="width:64px;height:64px;border-radius:20px;background:var(--accent-light);display:flex;align-items:center;justify-content:center;margin-bottom:4px;">
+          <svg width="32" height="32" fill="none"><path d="M16 4v16M4 16h24" stroke="#2E6F40" stroke-width="2.5" stroke-linecap="round"/><rect x="4" y="8" width="24" height="20" rx="4" stroke="#2E6F40" stroke-width="2" stroke-dasharray="3 3"/></svg>
+        </div>
+        <div class="heading-sm">Tap to select image</div>
+        <div class="body-sm text-center">Supports JPG, PNG, HEIC<br>Meals, packaged food, ingredients</div>
+      </label>
+
+      <!-- Or divider -->
+      <div class="flex items-center gap-12 mb-16">
+        <div style="flex:1;height:1px;background:var(--border);"></div>
+        <span class="body-sm">or try a sample</span>
+        <div style="flex:1;height:1px;background:var(--border);"></div>
+      </div>
+
+      <!-- Sample foods -->
+      <div class="label mb-8">SAMPLE FOODS</div>
+      <div class="flex gap-8 mb-20" style="flex-wrap:wrap;">
+        <button onclick="useSample('pasta')"   style="flex:1;min-width:80px;padding:10px 0;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);cursor:pointer;font-size:22px;display:flex;flex-direction:column;align-items:center;gap:4px;"><span>🍝</span><span style="font-size:11px;color:var(--text-secondary);">Pasta</span></button>
+        <button onclick="useSample('salad')"   style="flex:1;min-width:80px;padding:10px 0;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);cursor:pointer;font-size:22px;display:flex;flex-direction:column;align-items:center;gap:4px;"><span>🥗</span><span style="font-size:11px;color:var(--text-secondary);">Salad</span></button>
+        <button onclick="useSample('burger')"  style="flex:1;min-width:80px;padding:10px 0;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);cursor:pointer;font-size:22px;display:flex;flex-direction:column;align-items:center;gap:4px;"><span>🍔</span><span style="font-size:11px;color:var(--text-secondary);">Burger</span></button>
+        <button onclick="useSample('sushi')"   style="flex:1;min-width:80px;padding:10px 0;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);cursor:pointer;font-size:22px;display:flex;flex-direction:column;align-items:center;gap:4px;"><span>🍱</span><span style="font-size:11px;color:var(--text-secondary);">Sushi</span></button>
+      </div>
+
+      <!-- Tips -->
+      <div class="card" style="padding:14px 16px;">
+        <div class="heading-sm mb-8">📸 Photo Tips</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <div class="body-sm">• Good lighting improves accuracy</div>
+          <div class="body-sm">• Keep food centered in frame</div>
+          <div class="body-sm">• Avoid blurry or dark images</div>
+          <div class="body-sm">• Include packaging labels if available</div>
+        </div>
+      </div>
+
+      <div style="height:8px;"></div>
+    </div>
+    <div class="bottom-actions">
+      <button class="btn-outline" onclick="goTo('home')">Cancel</button>
+      <button class="btn-primary" id="btn-next-upload" disabled onclick="goTo('preview')">
+        Next — Preview
+        <svg width="14" height="14" fill="none"><path d="M5 3l4 4-4 4" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+    </div>`;
+  return el;
+}
+
+/* ── Screen: Preview ── */
+function buildPreviewScreen() {
+  const el = document.createElement('div');
+  el.className = 'screen';
+  el.id = 's-preview';
+  el.innerHTML = `
+    ${statusBarHTML()}
+    ${backBtnHTML('upload', 'Preview')}
+    <div class="screen-body" style="padding-top:8px;">
+      <div class="label mb-8">STEP 2 OF 3</div>
+      <div class="heading-md mb-4">Confirm Image</div>
+      <div class="body-md mb-16">Make sure the food is clearly visible before analyzing.</div>
+
+      <!-- Image preview container -->
+      <div style="position:relative;margin-bottom:16px;">
+        <img id="preview-img" src="" alt="Food preview"
+          style="width:100%;height:220px;object-fit:cover;border-radius:var(--r-md);border:1px solid var(--border);display:block;background:var(--accent-light);">
+        <button onclick="goTo('upload')" style="position:absolute;top:10px;right:10px;width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.9);border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;">
+          <svg width="14" height="14" fill="none"><path d="M2 12L12 2M2 2l10 10" stroke="#1F2B1F" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+
+      <!-- Detected food label (populated after analysis) -->
+      <div id="food-detected-label" class="card" style="padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px;">
+        <div style="width:44px;height:44px;border-radius:12px;background:var(--accent-light);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;" id="preview-emoji">🍽️</div>
+        <div>
+          <div class="label mb-4">DETECTED</div>
+          <div class="heading-sm" id="preview-food-name">Ready to analyze</div>
+          <div class="body-sm" id="preview-food-sub">AI will identify food components</div>
+        </div>
+      </div>
+
+      <!-- What the AI will check -->
+      <div class="heading-sm mb-8">What We'll Analyze</div>
+      <div class="card" style="margin-bottom:16px;">
+        <div class="ingredient-item">
+          <div class="flex items-center gap-12"><div style="width:32px;height:32px;border-radius:8px;background:var(--accent-light);display:flex;align-items:center;justify-content:center;">🥩</div><div class="body-md">Food components & ingredients</div></div>
+          <svg width="14" height="14" fill="none"><path d="M3 7l3 3 5-5" stroke="#2E6F40" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </div>
+        <div class="ingredient-item">
+          <div class="flex items-center gap-12"><div style="width:32px;height:32px;border-radius:8px;background:var(--accent-light);display:flex;align-items:center;justify-content:center;">📊</div><div class="body-md">Nutritional breakdown</div></div>
+          <svg width="14" height="14" fill="none"><path d="M3 7l3 3 5-5" stroke="#2E6F40" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </div>
+        <div class="ingredient-item">
+          <div class="flex items-center gap-12"><div style="width:32px;height:32px;border-radius:8px;background:var(--accent-light);display:flex;align-items:center;justify-content:center;">⚠️</div><div class="body-md">Health risk & warnings</div></div>
+          <svg width="14" height="14" fill="none"><path d="M3 7l3 3 5-5" stroke="#2E6F40" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </div>
+        <div class="ingredient-item">
+          <div class="flex items-center gap-12"><div style="width:32px;height:32px;border-radius:8px;background:var(--accent-light);display:flex;align-items:center;justify-content:center;">🏅</div><div class="body-md">Overall health score</div></div>
+          <svg width="14" height="14" fill="none"><path d="M3 7l3 3 5-5" stroke="#2E6F40" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </div>
+      </div>
+
+      <div style="height:8px;"></div>
+    </div>
+    <div class="bottom-actions">
+      <button class="btn-outline" onclick="goTo('upload')">Change Image</button>
+      <button class="btn-primary" onclick="startAnalysis()">
+        <svg width="16" height="16" fill="none"><circle cx="8" cy="8" r="5" stroke="white" stroke-width="1.8"/><path d="M8 5v3l2 2" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg>
+        Analyze Food
+      </button>
+    </div>`;
+  return el;
+}
+
+/* ── Screen: Loading ── */
+function buildLoadingScreen() {
+  const el = document.createElement('div');
+  el.className = 'screen';
+  el.id = 's-loading';
+  el.innerHTML = `
+    ${statusBarHTML()}
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px;gap:0;">
+      <!-- Spinner -->
+      <div class="spinner mb-20"></div>
+
+      <div class="heading-md mb-8 text-center" id="loading-step">Identifying food…</div>
+      <div class="body-md text-center mb-24">AI is analyzing your food image. This takes a few seconds.</div>
+
+      <!-- Progress bar -->
+      <div style="width:100%;max-width:280px;height:6px;background:var(--border);border-radius:99px;overflow:hidden;margin-bottom:16px;">
+        <div id="loading-bar" style="height:100%;background:var(--accent);border-radius:99px;width:0%;transition:width .4s ease;"></div>
+      </div>
+      <div class="body-sm" id="loading-pct">0%</div>
+
+      <!-- Steps list -->
+      <div style="margin-top:32px;width:100%;max-width:300px;display:flex;flex-direction:column;gap:10px;" id="loading-steps-list">
+        <div class="flex items-center gap-12" id="load-step-1">
+          <div style="width:24px;height:24px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px;">1</div>
+          <span class="body-sm">Detecting food items</span>
+        </div>
+        <div class="flex items-center gap-12" id="load-step-2">
+          <div style="width:24px;height:24px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px;">2</div>
+          <span class="body-sm">Extracting ingredients</span>
+        </div>
+        <div class="flex items-center gap-12" id="load-step-3">
+          <div style="width:24px;height:24px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px;">3</div>
+          <span class="body-sm">Calculating nutrition</span>
+        </div>
+        <div class="flex items-center gap-12" id="load-step-4">
+          <div style="width:24px;height:24px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px;">4</div>
+          <span class="body-sm">Assessing health risks</span>
+        </div>
+      </div>
+    </div>`;
+  return el;
+}
+
+/* ── Screen: Results ── */
+function buildResultsScreen() {
+  const el = document.createElement('div');
+  el.className = 'screen';
+  el.id = 's-results';
+  el.innerHTML = `
+    ${statusBarHTML()}
+    ${backBtnHTML('home', 'Analysis Results')}
+    <div class="screen-body" style="padding-top:8px;" id="results-body">
+      <!-- populated by renderResults() -->
+      <div style="text-align:center;padding:40px 20px;">
+        <div class="body-md">No analysis yet. <a href="#" onclick="goTo('upload');return false;" style="color:var(--accent);font-weight:600;">Analyze food</a></div>
+      </div>
+    </div>
+    <div class="bottom-actions">
+      <button class="btn-outline" onclick="goTo('upload')">
+        <svg width="14" height="14" fill="none"><path d="M8 3v10M3 8h10" stroke="#5A6E5D" stroke-width="1.8" stroke-linecap="round"/></svg>
+        New Analysis
+      </button>
+      <button class="btn-primary" onclick="goTo('risks')">
+        <svg width="14" height="14" fill="none"><path d="M7 3L1 13h12L7 3z" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 7v3M7 11.5v.5" stroke="white" stroke-width="1.8" stroke-linecap="round"/></svg>
+        View Risks
+      </button>
+    </div>`;
+  return el;
+}
+
+/* ── Screen: Risks ── */
+function buildRisksScreen() {
+  const el = document.createElement('div');
+  el.className = 'screen';
+  el.id = 's-risks';
+  el.innerHTML = `
+    ${statusBarHTML()}
+    ${backBtnHTML('results', 'Health Risks')}
+    <div class="screen-body" style="padding-top:8px;" id="risks-body">
+      <!-- populated by renderRisks() -->
+      <div style="text-align:center;padding:40px 20px;">
+        <div class="body-md">No analysis yet. <a href="#" onclick="goTo('upload');return false;" style="color:var(--accent);font-weight:600;">Analyze food</a></div>
+      </div>
+    </div>
+    <div class="bottom-actions">
+      <button class="btn-outline" onclick="goTo('results')">← Results</button>
+      <button class="btn-primary" onclick="goTo('home')">
+        <svg width="14" height="14" fill="none"><path d="M2 8L7 3l5 5M7 3v9" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Back to Home
+      </button>
+    </div>`;
+  return el;
+}
+
+/* ══════════════════════════════════════════════════
+   RENDER DYNAMIC CONTENT
+══════════════════════════════════════════════════ */
+
+function renderResults(food) {
+  const scoreClass = food.healthScore >= 80 ? '' : food.healthScore >= 60 ? 'score-warn' : 'score-danger';
+  const riskCount = food.risks.filter(r => r.level === 'danger' || r.level === 'warn').length;
+
+  document.getElementById('results-body').innerHTML = `
+    <!-- Food header -->
+    <div class="card" style="padding:18px;margin-bottom:12px;">
+      <div class="flex items-center gap-12 mb-14">
+        <div style="width:60px;height:60px;border-radius:16px;background:var(--accent-light);display:flex;align-items:center;justify-content:center;font-size:30px;flex-shrink:0;">${food.emoji}</div>
+        <div style="flex:1;">
+          <div class="heading-md">${food.name}</div>
+          <div class="body-sm">${food.category} · ${food.servingSize}</div>
+          <div class="flex gap-8 mt-8" style="flex-wrap:wrap;">
+            <span class="tag ${scoreClass}">Score ${food.healthScore}</span>
+            ${riskCount > 0 ? `<span class="tag tag-warn">${riskCount} risk${riskCount > 1 ? 's' : ''}</span>` : '<span class="tag">No major risks</span>'}
+          </div>
+        </div>
+        <div class="score-badge ${scoreClass}">
+          <div style="font-size:20px;font-weight:900;line-height:1;">${food.healthScore}</div>
+          <div style="font-size:9px;font-weight:600;opacity:.8;">SCORE</div>
+        </div>
+      </div>
+
+      <!-- Calories -->
+      <div style="background:var(--accent-light);border-radius:var(--r-sm);padding:12px 14px;display:flex;align-items:center;justify-content:space-between;">
+        <div>
+          <div class="label mb-2">CALORIES PER SERVING</div>
+          <div style="font-size:32px;font-weight:900;color:var(--accent);line-height:1;">${food.calories}</div>
+          <div class="body-sm">kcal</div>
+        </div>
+        <svg width="72" height="72" viewBox="0 0 72 72">
+          <circle cx="36" cy="36" r="28" stroke="#EAE6DF" stroke-width="7" fill="none"/>
+          <circle cx="36" cy="36" r="28" stroke="#2E6F40" stroke-width="7" fill="none"
+            stroke-dasharray="175.9" stroke-dashoffset="${175.9 * (1 - food.calories / 2000)}"
+            stroke-linecap="round" transform="rotate(-90 36 36)"/>
+          <text x="36" y="40" text-anchor="middle" font-size="12" font-weight="700" fill="#1F2B1F">${Math.round(food.calories/2000*100)}%</text>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Macros -->
+    <div class="label mb-8">MACRONUTRIENTS</div>
+    <div class="macro-row mb-12">
+      <div class="macro-chip"><div class="mc-val">${food.macros.protein}<span class="mc-unit">g</span></div><div class="mc-name">Protein</div></div>
+      <div class="macro-chip"><div class="mc-val">${food.macros.carbs}<span class="mc-unit">g</span></div><div class="mc-name">Carbs</div></div>
+      <div class="macro-chip"><div class="mc-val">${food.macros.fat}<span class="mc-unit">g</span></div><div class="mc-name">Fat</div></div>
+      <div class="macro-chip"><div class="mc-val">${food.macros.fiber}<span class="mc-unit">g</span></div><div class="mc-name">Fiber</div></div>
+    </div>
+
+    <!-- Detailed nutrients -->
+    <div class="label mb-8">FULL NUTRITION (% DAILY VALUE)</div>
+    <div class="card" style="padding:14px 16px;margin-bottom:12px;">
+      ${food.nutrients.map(n => `
+        <div class="nutrient-row" style="margin-bottom:${n === food.nutrients[food.nutrients.length-1] ? '0' : '10px'};">
+          <div class="nutrient-label" style="${n.warn ? 'color:var(--warn);font-weight:600;' : ''}">${n.name}</div>
+          <div class="nutrient-track"><div class="nutrient-fill" style="width:${n.pct}%;${n.warn ? 'background:var(--warn);' : ''}"></div></div>
+          <div class="nutrient-value">${n.val} <span style="color:${n.warn ? 'var(--warn)' : 'var(--text-muted)'};">${n.pct}%</span></div>
+        </div>`).join('')}
+    </div>
+
+    <!-- Detected ingredients -->
+    <div class="label mb-8">DETECTED COMPONENTS</div>
+    <div class="card" style="margin-bottom:12px;">
+      ${food.ingredients.map(ing => `
+        <div class="ingredient-item">
+          <div class="flex items-center gap-10">
+            <div style="width:8px;height:8px;border-radius:50%;background:${ing.flag === 'danger' ? 'var(--danger)' : ing.flag === 'warn' ? 'var(--warn)' : 'var(--accent)'};flex-shrink:0;"></div>
+            <span class="body-md">${ing.name}</span>
+            ${ing.flag ? `<span class="tag ${ing.flag === 'danger' ? 'tag-danger' : 'tag-warn'}" style="font-size:10px;">${ing.flag === 'danger' ? '⚠ High risk' : '⚠ Caution'}</span>` : ''}
+          </div>
+          <span class="body-sm">${ing.amount}</span>
+        </div>`).join('')}
+    </div>
+
+    <!-- Risk preview -->
+    ${riskCount > 0 ? `
+    <div class="label mb-8">RISK SUMMARY</div>
+    ${food.risks.slice(0,2).map(r => `
+      <div class="${r.level === 'danger' ? 'danger-card' : r.level === 'warn' ? 'warn-card' : 'info-card'}">
+        <div style="font-size:20px;flex-shrink:0;margin-top:2px;">${r.icon}</div>
+        <div><div class="heading-sm mb-4">${r.title}</div><div class="body-sm">${r.body.substring(0,90)}…</div></div>
+      </div>`).join('')}
+    <button onclick="goTo('risks')" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:var(--r-pill);background:var(--surface);font-size:13px;font-weight:600;color:var(--accent);cursor:pointer;margin-bottom:12px;">View all ${food.risks.length} risks →</button>
+    ` : `<div class="info-card"><div style="font-size:20px;">✅</div><div><div class="heading-sm mb-4">No significant risks found</div><div class="body-sm">This food appears to be a healthy choice based on its nutritional profile.</div></div></div>`}
+
+    <div style="height:8px;"></div>`;
+}
+
+function renderRisks(food) {
+  document.getElementById('risks-body').innerHTML = `
+    <!-- Risk header -->
+    <div style="background:linear-gradient(135deg,#7f1d1d 0%,#991B1B 100%);border-radius:var(--r-md);padding:18px;margin-bottom:16px;">
+      <div class="label" style="color:rgba(255,255,255,.6);margin-bottom:6px;">HEALTH RISK REPORT</div>
+      <div style="font-size:18px;font-weight:800;color:#fff;margin-bottom:4px;">${food.name}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+        <span style="background:rgba(255,255,255,.15);color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px;">${food.risks.filter(r=>r.level==='danger').length} High Risk</span>
+        <span style="background:rgba(255,255,255,.15);color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px;">${food.risks.filter(r=>r.level==='warn').length} Caution</span>
+        <span style="background:rgba(255,255,255,.15);color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px;">${food.risks.filter(r=>r.level==='info').length} Info</span>
+      </div>
+    </div>
+
+    <div class="label mb-8">RISK DETAILS</div>
+
+    ${food.risks.map((r, i) => `
+      <div class="${r.level === 'danger' ? 'danger-card' : r.level === 'warn' ? 'warn-card' : 'info-card'}" style="flex-direction:column;gap:8px;">
+        <div class="flex items-center gap-10">
+          <span style="font-size:22px;">${r.icon}</span>
+          <div>
+            <span class="tag ${r.level === 'danger' ? 'tag-danger' : r.level === 'warn' ? 'tag-warn' : ''}" style="margin-bottom:4px;">${r.level === 'danger' ? 'HIGH RISK' : r.level === 'warn' ? 'CAUTION' : 'INFO'}</span>
+            <div class="heading-sm">${r.title}</div>
+          </div>
+        </div>
+        <div class="body-md" style="color:${r.level==='danger'?'var(--danger)':r.level==='warn'?'var(--warn)':'var(--text-secondary)'};">${r.body}</div>
+      </div>`).join('')}
+
+    <!-- Recommendation -->
+    <div class="heading-sm mb-8 mt-4">Recommendations</div>
+    <div class="card" style="padding:14px 16px;margin-bottom:16px;">
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div class="body-sm flex gap-8 items-center"><span style="color:var(--accent);font-weight:700;">→</span> Limit to 1 serving per day maximum</div>
+        <div class="body-sm flex gap-8 items-center"><span style="color:var(--accent);font-weight:700;">→</span> Balance with low-sodium foods throughout the day</div>
+        <div class="body-sm flex gap-8 items-center"><span style="color:var(--accent);font-weight:700;">→</span> Consult a dietitian if you have existing health conditions</div>
+        <div class="body-sm flex gap-8 items-center"><span style="color:var(--accent);font-weight:700;">→</span> Pair with fresh vegetables to add fiber and micronutrients</div>
+      </div>
+    </div>
+
+    <!-- Disclaimer -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px 14px;margin-bottom:16px;">
+      <div class="body-sm" style="color:var(--text-muted);line-height:1.5;">
+        <strong>Disclaimer:</strong> This analysis is for informational purposes only and is based on simulated AI detection. Results may not be 100% accurate. Always consult a qualified healthcare professional for medical dietary advice.
+      </div>
+    </div>
+
+    <div style="height:8px;"></div>`;
+}
+
+/* ══════════════════════════════════════════════════
+   FR1 FLOW LOGIC
+══════════════════════════════════════════════════ */
+
+/* Mock food database by sample type */
+const SAMPLE_DATA = {
+  pasta: {
+    name: 'Pasta Bolognese', emoji: '🍝', category: 'Italian · Pasta', servingSize: '300g',
+    healthScore: 68, calories: 520,
+    macros: { protein: 24, carbs: 68, fat: 18, fiber: 5 },
+    nutrients: [
+      { name: 'Sodium',    val: '720mg', pct: 31, warn: true  },
+      { name: 'Sugar',     val: '6g',    pct: 7,  warn: false },
+      { name: 'Sat. Fat',  val: '6g',    pct: 30, warn: true  },
+      { name: 'Iron',      val: '3.2mg', pct: 18, warn: false },
+      { name: 'Calcium',   val: '55mg',  pct: 4,  warn: false },
+      { name: 'Vitamin A', val: '120µg', pct: 13, warn: false },
+    ],
+    ingredients: [
+      { name: 'Spaghetti',       amount: '100g', flag: null   },
+      { name: 'Ground Beef',     amount: '80g',  flag: null   },
+      { name: 'Tomato Sauce',    amount: '80g',  flag: null   },
+      { name: 'Parmesan Cheese', amount: '20g',  flag: 'warn' },
+      { name: 'Olive Oil',       amount: '10g',  flag: null   },
+      { name: 'Salt',            amount: '1.8g', flag: 'danger' },
+    ],
+    risks: [
+      { level:'danger', title:'Very High Sodium', body:'720mg sodium is 31% of the daily limit in one serving. High sodium diets significantly increase blood pressure and stroke risk.', icon:'🩺' },
+      { level:'warn', title:'High Saturated Fat', body:'6g saturated fat (30% DV) from beef and cheese. Limit if managing cholesterol or cardiovascular health.', icon:'🫀' },
+      { level:'warn', title:'Refined Carbohydrates', body:'White pasta has a high glycemic index. Consider whole-wheat pasta as a healthier alternative.', icon:'🌾' },
+      { level:'info', title:'Good Protein Source', body:'24g of protein per serving supports muscle maintenance and satiety.', icon:'✅' },
+    ],
+  },
+  salad: {
+    name: 'Caesar Salad', emoji: '🥗', category: 'Salad · Light Meal', servingSize: '250g',
+    healthScore: 84, calories: 310,
+    macros: { protein: 14, carbs: 18, fat: 20, fiber: 7 },
+    nutrients: [
+      { name: 'Sodium',    val: '480mg', pct: 21, warn: true  },
+      { name: 'Sugar',     val: '4g',    pct: 4,  warn: false },
+      { name: 'Sat. Fat',  val: '3.5g',  pct: 18, warn: false },
+      { name: 'Vitamin C', val: '32mg',  pct: 36, warn: false },
+      { name: 'Vitamin K', val: '90µg',  pct: 75, warn: false },
+      { name: 'Calcium',   val: '120mg', pct: 9,  warn: false },
+    ],
+    ingredients: [
+      { name: 'Romaine Lettuce', amount: '120g', flag: null   },
+      { name: 'Caesar Dressing', amount: '40g',  flag: 'warn' },
+      { name: 'Parmesan',        amount: '20g',  flag: null   },
+      { name: 'Croutons',        amount: '25g',  flag: null   },
+      { name: 'Chicken Breast',  amount: '60g',  flag: null   },
+      { name: 'Anchovies',       amount: '5g',   flag: 'warn' },
+    ],
+    risks: [
+      { level:'warn', title:'Caesar Dressing Sodium', body:'Caesar dressing is high in sodium and saturated fat. Use sparingly or opt for a lighter vinaigrette dressing.', icon:'⚠️' },
+      { level:'warn', title:'Anchovy Allergen', body:'Anchovies are a fish allergen. People with fish allergies should avoid this dish or request anchovy-free preparation.', icon:'🐟' },
+      { level:'info', title:'Excellent Vitamin K Source', body:'75% of daily Vitamin K supports bone health and blood clotting function.', icon:'✅' },
+      { level:'info', title:'High in Vitamin C', body:'36% of daily Vitamin C boosts immune function and acts as an antioxidant.', icon:'✅' },
+    ],
+  },
+  burger: {
+    name: 'Beef Burger', emoji: '🍔', category: 'Fast Food · Burger', servingSize: '350g',
+    healthScore: 42, calories: 680,
+    macros: { protein: 38, carbs: 48, fat: 32, fiber: 3 },
+    nutrients: [
+      { name: 'Sodium',    val: '1240mg', pct: 54, warn: true },
+      { name: 'Sugar',     val: '10g',    pct: 11, warn: false },
+      { name: 'Sat. Fat',  val: '14g',    pct: 70, warn: true },
+      { name: 'Cholesterol', val: '120mg', pct: 40, warn: true },
+      { name: 'Iron',      val: '4.5mg',  pct: 25, warn: false },
+      { name: 'Vitamin B12', val: '2.4µg', pct: 100, warn: false },
+    ],
+    ingredients: [
+      { name: 'Beef Patty (80/20)',  amount: '150g', flag: 'warn'   },
+      { name: 'Brioche Bun',         amount: '80g',  flag: null     },
+      { name: 'Processed Cheese',    amount: '30g',  flag: 'warn'   },
+      { name: 'Bacon',               amount: '30g',  flag: 'danger' },
+      { name: 'Mayonnaise',          amount: '20g',  flag: 'warn'   },
+      { name: 'Ketchup',             amount: '15g',  flag: null     },
+    ],
+    risks: [
+      { level:'danger', title:'Extremely High Sodium', body:'1240mg sodium (54% DV) in a single meal. This significantly exceeds safe levels for one sitting and raises blood pressure risk.', icon:'🩺' },
+      { level:'danger', title:'Very High Saturated Fat', body:'14g saturated fat (70% DV) primarily from beef fat and processed cheese. Regular consumption strongly linked to cardiovascular disease.', icon:'🫀' },
+      { level:'danger', title:'Processed Meat (Bacon)', body:'WHO classifies processed meats as Group 1 carcinogens. Limit consumption to minimize colorectal cancer risk.', icon:'⚠️' },
+      { level:'warn', title:'High Cholesterol Content', body:'120mg dietary cholesterol (40% DV). Those with hypercholesterolemia should strictly limit consumption.', icon:'💉' },
+    ],
+  },
+  sushi: {
+    name: 'Sushi Platter', emoji: '🍱', category: 'Japanese · Sushi', servingSize: '280g',
+    healthScore: 88, calories: 380,
+    macros: { protein: 22, carbs: 56, fat: 8, fiber: 4 },
+    nutrients: [
+      { name: 'Sodium',    val: '890mg', pct: 39, warn: true  },
+      { name: 'Sugar',     val: '8g',    pct: 9,  warn: false },
+      { name: 'Sat. Fat',  val: '1.5g',  pct: 8,  warn: false },
+      { name: 'Omega-3',   val: '1.2g',  pct: 80, warn: false },
+      { name: 'Iodine',    val: '180µg', pct: 120, warn: true },
+      { name: 'Vitamin D', val: '4.5µg', pct: 30, warn: false },
+    ],
+    ingredients: [
+      { name: 'Sushi Rice',      amount: '120g', flag: null     },
+      { name: 'Salmon (raw)',    amount: '60g',  flag: 'warn'   },
+      { name: 'Tuna (raw)',      amount: '40g',  flag: 'warn'   },
+      { name: 'Nori Seaweed',    amount: '10g',  flag: null     },
+      { name: 'Soy Sauce',       amount: '20g',  flag: 'danger' },
+      { name: 'Wasabi',          amount: '5g',   flag: null     },
+    ],
+    risks: [
+      { level:'danger', title:'Very High Sodium from Soy Sauce', body:'Soy sauce contains 890mg+ sodium per serving. Use low-sodium alternatives or limit to 1 tablespoon.', icon:'🧂' },
+      { level:'warn', title:'Raw Fish (Food Safety)', body:'Raw salmon and tuna may carry parasites (e.g., Anisakis). Pregnant individuals and immunocompromised people should avoid raw fish.', icon:'🐟' },
+      { level:'warn', title:'Excess Iodine from Seaweed', body:'Nori contains 120%+ of daily iodine intake. Excess iodine can affect thyroid function if consumed very frequently.', icon:'🌿' },
+      { level:'info', title:'Excellent Omega-3 Source', body:'1.2g omega-3 fatty acids support heart health, brain function, and reduce inflammation.', icon:'✅' },
+    ],
+  },
+};
+
+function handleFileSelect(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    state.uploadedImageSrc = e.target.result;
+    // Use default food data when user uploads custom image
+    state.analysisResult = MOCK_FOODS.default;
+    // Enable next button
+    const btn = document.getElementById('btn-next-upload');
+    if (btn) { btn.disabled = false; }
+    // Update preview
+    const previewImg = document.getElementById('preview-img');
+    if (previewImg) previewImg.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function useSample(type) {
+  const food = SAMPLE_DATA[type] || MOCK_FOODS.default;
+  state.analysisResult = food;
+  // Create placeholder image with emoji
+  state.uploadedImageSrc = null;
+
+  // Enable next button
+  const btn = document.getElementById('btn-next-upload');
+  if (btn) { btn.disabled = false; }
+
+  // Update upload zone visual
+  const zone = document.getElementById('upload-zone');
+  if (zone) {
+    zone.style.background = 'var(--accent-light)';
+    zone.style.borderColor = 'var(--accent)';
+  }
+
+  // Update preview screen
+  const previewImg = document.getElementById('preview-img');
+  if (previewImg) {
+    // Draw emoji on canvas as preview
+    const canvas = document.createElement('canvas');
+    canvas.width = 393; canvas.height = 220;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#EAF5EC';
+    ctx.fillRect(0, 0, 393, 220);
+    ctx.font = '90px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(food.emoji, 196, 110);
+    previewImg.src = canvas.toDataURL();
+  }
+  const nameEl = document.getElementById('preview-food-name');
+  if (nameEl) nameEl.textContent = food.name;
+  const subEl = document.getElementById('preview-food-sub');
+  if (subEl) subEl.textContent = `${food.category} · ${food.servingSize} serving`;
+  const emojiEl = document.getElementById('preview-emoji');
+  if (emojiEl) emojiEl.textContent = food.emoji;
+
+  goTo('preview');
+}
+
+function startAnalysis() {
+  if (!state.analysisResult) {
+    state.analysisResult = MOCK_FOODS.default;
+  }
+  goTo('loading');
+  runLoadingSequence();
+}
+
+function runLoadingSequence() {
+  const bar = document.getElementById('loading-bar');
+  const pct = document.getElementById('loading-pct');
+  const stepLabel = document.getElementById('loading-step');
+
+  const steps = [
+    { pct: 20, label: 'Detecting food items…',     el: 'load-step-1' },
+    { pct: 45, label: 'Extracting ingredients…',   el: 'load-step-2' },
+    { pct: 75, label: 'Calculating nutrition…',    el: 'load-step-3' },
+    { pct: 95, label: 'Assessing health risks…',   el: 'load-step-4' },
+    { pct: 100, label: 'Analysis complete!',        el: null       },
+  ];
+
+  let i = 0;
+  function tick() {
+    if (i >= steps.length) {
+      // Done — render and navigate
+      renderResults(state.analysisResult);
+      renderRisks(state.analysisResult);
+      setTimeout(() => goTo('results'), 400);
+      return;
+    }
+    const s = steps[i];
+    if (bar) { bar.style.width = s.pct + '%'; }
+    if (pct) { pct.textContent = s.pct + '%'; }
+    if (stepLabel) { stepLabel.textContent = s.label; }
+    if (s.el) {
+      const el = document.getElementById(s.el);
+      if (el) {
+        el.querySelector('div').style.background = 'var(--accent)';
+        el.querySelector('div').style.color = 'white';
+        el.querySelector('div').innerHTML = '✓';
+      }
+    }
+    i++;
+    setTimeout(tick, i === steps.length ? 300 : 600);
+  }
+  setTimeout(tick, 300);
+}
+
+/* ══════════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════════ */
+
+function init() {
+  const phone = document.querySelector('.phone');
+  // Remove placeholder comment
+  phone.innerHTML = '';
+
+  // Build all screens
+  phone.appendChild(buildHomeScreen());
+  phone.appendChild(buildCameraScreen());
+  phone.appendChild(buildUploadScreen());
+  phone.appendChild(buildPreviewScreen());
+  phone.appendChild(buildLoadingScreen());
+  phone.appendChild(buildResultsScreen());
+  phone.appendChild(buildRisksScreen());
+
+  // Start on home
+  goTo('home');
+}
+
+init();
+</script>
+</body>
+</html>

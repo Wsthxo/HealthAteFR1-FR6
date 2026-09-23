@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HEALTHATE — แผนที่ร้านสุขภาพ (Health Place Prototype)</title>
+<style>
+/* ── Design Tokens (ยึดตามภาพ Reference) ── */
+:root {
+  --bg-main:        #F8F7F3;
+  --surface:        #FFFFFF;
+  --border-color:   #ECEAE4;
+  --text-primary:   #1A241B;
+  --text-secondary: #606C62;
+  --text-muted:     #8E9890;
+  --green-primary:  #1D6A39;
+  --green-hover:    #16532C;
+  --green-light:    #EAF3ED;
+  --green-accent:   #4BA36A;
+  --blue-gps:       #1976D2;
+  --danger-red:     #D32F2F;
+  --radius-sm:      10px;
+  --radius-md:      16px;
+  --radius-lg:      24px;
+  --radius-pill:    999px;
+  --font-family:    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Prompt", "Kanit", "Sukhumvit Set", sans-serif;
+}
+
+/* ── Reset & Body Layout ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: var(--font-family);
+  background-color: #D3D0C8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+/* ── Mobile Phone Frame (390 x 844 px) ── */
+.phone-frame {
+  width: 390px;
+  height: 844px;
+  background-color: var(--bg-main);
+  border-radius: 44px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  user-select: none;
+}
+
+/* ── Status Bar Header ── */
+.status-bar {
+  height: 44px;
+  padding: 12px 24px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  z-index: 50;
+  background: transparent;
+}
+.status-bar.dark-mode { color: #FFFFFF; }
+.status-time { font-size: 15px; font-weight: 600; color: var(--text-primary); }
+.status-bar.dark-mode .status-time { color: #FFFFFF; }
+.status-icons { display: flex; align-items: center; gap: 6px; }
+
+/* ── Screen Controller ── */
+.screen {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  background-color: var(--bg-main);
+  z-index: 10;
+}
+.screen.active { display: flex; }
+
+/* ── Scrollable Body Area ── */
+.screen-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0 20px 90px 20px;
+  -webkit-overflow-scrolling: touch;
+}
+.screen-content::-webkit-scrollbar { display: none; }
+
+/* ── Search Bar Component ── */
+.search-container {
+  display: flex;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-pill);
+  padding: 10px 16px;
+  margin-top: 12px;
+  margin-bottom: 16px;
+  cursor: text;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+.search-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 14px;
+  color: var(--text-primary);
+  background: transparent;
+  margin-left: 8px;
+  font-family: inherit;
+}
+.search-input::placeholder { color: var(--text-muted); }
+
+/* ── Bottom Navigation Bar (6 Tabs) ── */
+.bottom-nav {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  background: var(--surface);
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  align-items: flex-start;
+  padding-top: 8px;
+  z-index: 100;
+}
+.nav-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+  background: none;
+  border: none;
+  transition: opacity 0.2s;
+}
+.nav-tab:active { opacity: 0.6; }
+.nav-tab span {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+.nav-tab.active span {
+  color: var(--green-primary);
+  font-weight: 700;
+}
+.nav-icon {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+/* ── Home Indicator (iPhone Line) ── */
+.home-indicator {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 134px;
+  height: 5px;
+  background-color: #000000;
+  border-radius: 99px;
+  z-index: 110;
+}
+
+/* ── Reuse Components ── */
+.top-header {
+  padding: 12px 20px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+.btn-back, .btn-icon-bg {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  border: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-back:active, .btn-icon-bg:active { background: var(--bg-main); }
+.header-title { font-size: 20px; font-weight: 800; color: var(--text-primary); }
+.header-sub { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+
+/* ── Cards & Items ── */
+.place-card {
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  border: 1px solid var(--border-color);
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+.place-card:active { transform: scale(0.98); }
+.place-icon-box {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-sm);
+  background: var(--green-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.place-info { flex: 1; min-width: 0; }
+.place-name { font-size: 15px; font-weight: 700; color: var(--text-primary); line-height: 1.2; }
+.place-desc { font-size: 12px; color: var(--text-secondary); margin: 4px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.place-meta { font-size: 12px; font-weight: 600; color: var(--text-primary); display: flex; align-items: center; gap: 4px; }
+.place-distance { font-size: 13px; font-weight: 700; color: var(--green-primary); flex-shrink: 0; }
+
+/* ── Filter Pills ── */
+.pills-row {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0 16px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+.pills-row::-webkit-scrollbar { display: none; }
+.pill {
+  padding: 6px 16px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-color);
+  background: var(--surface);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: opacity 0.2s;
+}
+.pill:active { opacity: 0.7; }
+.pill.active {
+  background: var(--green-light);
+  border-color: var(--green-primary);
+  color: var(--green-primary);
+}
+.pill-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green-primary); }
+
+/* ── Filter Modal Bottom Sheet ── */
+.modal-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 200;
+  display: none;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+.modal-overlay.active { display: flex; }
+.bottom-sheet {
+  background: var(--surface);
+  border-top-left-radius: var(--radius-lg);
+  border-top-right-radius: var(--radius-lg);
+  padding: 20px 20px 34px;
+  animation: slideUp 0.25s ease-out;
+}
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.sheet-handle { width: 40px; height: 4px; background: var(--border-color); border-radius: 99px; margin: 0 auto 16px; }
+
+/* ── Buttons ── */
+.btn-primary-green {
+  width: 100%;
+  height: 48px;
+  background: var(--green-primary);
+  color: #FFFFFF;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background 0.1s;
+}
+.btn-primary-green:active { background: var(--green-hover); }
+.btn-outline, .btn-outline-gray {
+  height: 44px;
+  background: transparent;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s;
+}
+.btn-outline {
+  border: 1px solid var(--green-primary);
+  color: var(--green-primary);
+}
+.btn-outline-gray {
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+}
+.btn-outline:active, .btn-outline-gray:active { opacity: 0.6; }
+
+/* ── Range Slider Custom ── */
+.range-slider {
+  width: 100%;
+  accent-color: var(--green-primary);
+  height: 6px;
+  margin: 12px 0 6px;
+}
+</style>
+</head>
+<body>
+
+  <a href="FR1.html" style="position:absolute;top:12px;left:12px;font-size:12px;color:#000000;">Go to FR1</a >
+
+
+<div class="phone-frame">
+  
+  <!-- 1. SCREEN FR6.1 / FR6.2 (หน้าแรกค้นหาสถานที่สุขภาพ) -->
+  <div class="screen active" id="scr-6-1">
+    <div class="status-bar">
+      <span class="status-time">09:41</span>
+      <div class="status-icons">
+        <svg width="17" height="12" fill="#1A241B"><rect x="0" y="3" width="3" height="9" rx="1"/><rect x="4.5" y="2" width="3" height="10" rx="1"/><rect x="9" y="1" width="3" height="11" rx="1"/><rect x="13.5" y="0" width="3" height="12" rx="1"/></svg>
+        <svg width="16" height="12" fill="#1A241B"><path d="M8 2.5C10.2 2.5 12.2 3.4 13.6 4.9" stroke="#1A241B" stroke-width="1.5" stroke-linecap="round"/><circle cx="8" cy="10" r="1.2"/></svg>
+        <svg width="25" height="12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.5" stroke="#1A241B" stroke-opacity=".45"/><rect x="2" y="2" width="16" height="8" rx="2" fill="#1A241B"/></svg>
+      </div>
+    </div>
+
+    <div class="top-header" style="flex-direction:column; align-items:flex-start; padding-top:16px;">
+      <div class="header-title">ค้นหาสถานที่สุขภาพ</div>
+      <div class="header-sub">ค้นหาร้านอาหารคลีนและฟิตเนสรอบตัวคุณ</div>
+    </div>
+
+    <div class="screen-content" style="padding-top:4px;">
+      
+      <!-- Search Bar -->
+      <div class="search-container" onclick="showScreen('scr-6-4')">
+        <svg width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M16.5 16.5L11.5 11.5M13 7.5C13 10.5376 10.5376 13 7.5 13C4.46243 13 2 10.5376 2 7.5C2 4.46243 4.46243 2 7.5 2C10.5376 2 13 4.46243 13 7.5Z" stroke="#8E9890" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <input type="text" class="search-input" placeholder="ค้นหาร้านอาหาร, ฟิตเนส..." />
+      </div>
+
+      <!-- Map Preview Box -->
+      <div style="background:#D8E6DA; border-radius:var(--radius-lg); height:200px; position:relative; overflow:hidden; margin-bottom:20px; cursor:pointer; border:1px solid var(--border-color);" onclick="showScreen('scr-6-3')">
+        <!-- SVG Canvas Vector Map Mockup -->
+        <svg width="100%" height="100%" viewBox="0 0 350 200" fill="none">
+          <path d="M-10 100 Q 100 40, 200 120 T 360 80" stroke="#FFFFFF" stroke-width="18" stroke-linecap="round"/>
+          <path d="M80 -10 L 120 210 M 240 -10 L 220 210" stroke="#FFFFFF" stroke-width="12"/>
+          <path d="M-10 100 Q 100 40, 200 120 T 360 80" stroke="#E1EFE3" stroke-width="8" stroke-linecap="round"/>
+          <text x="130" y="30" fill="#758B78" font-size="10" font-weight="700" letter-spacing="1">MAPLETON ESTATES</text>
+          
+          <!-- Pin Salad Factory -->
+          <g transform="translate(70, 45)">
+            <rect x="0" y="0" width="32" height="32" rx="8" fill="#1D6A39"/>
+            <rect x="8" y="8" width="16" height="16" fill="#FFFFFF"/>
+            <text x="-10" y="44" fill="#1A241B" font-size="10" font-weight="700">สลัดแฟคทอรี่</text>
+          </g>
+
+          <!-- Pin User GPS Location (FR6.2) -->
+          <g transform="translate(180, 100)">
+            <circle cx="0" cy="0" r="14" fill="rgba(25, 118, 210, 0.2)"/>
+            <circle cx="0" cy="0" r="7" fill="#1976D2" stroke="#FFFFFF" stroke-width="2"/>
+            <text x="-8" y="18" fill="#1976D2" font-size="9" font-weight="700">คุณ</text>
+          </g>
+
+          <!-- Pin Gym -->
+          <g transform="translate(240, 100)">
+            <circle cx="14" cy="14" r="16" fill="#31708E"/>
+            <path d="M8 14 H20 M10 10 V18 M18 10 V18" stroke="#FFFFFF" stroke-width="2"/>
+            <text x="-5" y="40" fill="#1A241B" font-size="10" font-weight="700">ยิมแอคทีฟ</text>
+          </g>
+        </svg>
+      </div>
+
+      <div style="font-size:16px; font-weight:800; color:var(--text-primary); margin-bottom:12px;">สถานที่แนะนำใกล้คุณ</div>
+
+      <!-- Item 1: สลัดแฟคทอรี่ -->
+      <div class="place-card" onclick="showScreen('scr-6-5')">
+        <div class="place-icon-box">🥗</div>
+        <div class="place-info">
+          <div class="place-name">สลัดแฟคทอรี่ (Salad Facto...)</div>
+          <div class="place-desc">อาหารคลีน ปราศจากสารเคมี ผักสดออร์แกนิก</div>
+          <div class="place-meta">
+            <span style="color:#F59E0B;">⭐ 4.8</span>
+            <span style="color:var(--text-muted);">· 95 คะแนน</span>
+          </div>
+        </div>
+        <div class="place-distance">1.2 กม.</div>
+      </div>
+
+      <!-- Item 2: แอคทีฟฟิตเนส เซนเตอร์ -->
+      <div class="place-card" onclick="showScreen('scr-6-4')">
+        <div class="place-icon-box" style="background:#EBF3F9;">🏋️</div>
+        <div class="place-info">
+          <div class="place-name">แอคทีฟฟิตเนส เซนเตอร์</div>
+          <div class="place-desc">เครื่องเล่นครบครัน เทรนเนอร์ผู้เชี่ยวชาญ</div>
+          <div class="place-meta">
+            <span style="color:#F59E0B;">⭐ 4.7</span>
+            <span style="color:var(--text-muted);">· ฟิตเนสยอดเยี่ยม</span>
+          </div>
+        </div>
+        <div class="place-distance">2.4 กม.</div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- 2. SCREEN FR6.3 (ปรับผลการค้นหา - Filter Bottom Sheet Modal) -->
+  <div class="modal-overlay" id="scr-6-3" onclick="if(event.target===this) hideModal()">
+    <div class="bottom-sheet">
+      <div class="sheet-handle"></div>
+      
+      <div style="font-size:18px; font-weight:800; color:var(--text-primary);">ปรับผลการค้นหา</div>
+      <div style="font-size:13px; color:var(--text-secondary); margin-bottom:20px;">เลือกให้ตรงกับสิ่งที่คุณกำลังมองหา</div>
+
+      <!-- Section 1: เรียงลำดับตาม -->
+      <div style="font-size:14px; font-weight:700; color:var(--text-primary); margin-bottom:10px;">เรียงลำดับตาม</div>
+      <div style="display:flex; gap:10px; margin-bottom:20px;">
+        <div class="pill active" style="flex:1; justify-content:center; height:42px;">
+          <span class="pill-dot"></span> ใกล้ฉันที่สุด
+        </div>
+        <div class="pill" style="flex:1; justify-content:center; height:42px;" onclick="alert('เปลี่ยนการเรียงลำดับเป็นรีวิวสูงสุด')">
+          รีวิวสูงสุด
+        </div>
+      </div>
+
+      <!-- Section 2: คะแนนรีวิวขั้นต่ำ -->
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <div style="font-size:14px; font-weight:700; color:var(--text-primary);">คะแนนรีวิวขั้นต่ำ</div>
+        <div style="font-size:13px; font-weight:700; color:var(--green-primary);">3.0 ขึ้นไป</div>
+      </div>
+      <div style="color:#F59E0B; font-size:18px; margin-bottom:20px; cursor:pointer;" onclick="alert('เลือกคะแนนรีวิวขั้นต่ำ')">★ ★ ★ <span style="color:#D1D5DB;">★ ★</span></div>
+
+      <!-- Section 3: ระยะทางไม่เกิน -->
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div style="font-size:14px; font-weight:700; color:var(--text-primary);">ระยะทางไม่เกิน</div>
+        <div style="font-size:13px; font-weight:700; color:var(--green-primary);">3.0 กม.</div>
+      </div>
+      <input type="range" class="range-slider" min="0.5" max="10" value="3" step="0.5">
+      <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-muted); margin-bottom:20px;">
+        <span>500 ม.</span>
+        <span>10 กม.</span>
+      </div>
+
+      <!-- Section 4: ประเภทสถานที่ -->
+      <div style="font-size:14px; font-weight:700; color:var(--text-primary); margin-bottom:10px;">ประเภทสถานที่</div>
+      <div style="display:flex; gap:10px; margin-bottom:24px;">
+        <div class="pill active" style="padding:10px 20px;">
+          <span style="display:inline-block; width:12px; height:12px; background:var(--text-primary); margin-right:4px;"></span> ร้านอาหาร
+        </div>
+        <div class="pill" style="padding:10px 20px;" onclick="alert('เลือกประเภทสถานที่: ฟิตเนส')">
+          <span style="display:inline-block; width:12px; height:12px; background:var(--text-primary); margin-right:4px;"></span> ฟิตเนส
+        </div>
+      </div>
+
+      <div style="font-size:12px; color:var(--text-muted); margin-bottom:12px;">พบสถานที่ที่ตรงเงื่อนไข 12 แห่ง</div>
+
+      <!-- Buttons -->
+      <div style="display:flex; gap:10px;">
+        <button class="btn-primary-green" style="flex:2;" onclick="hideModal(); showScreen('scr-6-4');">
+          แสดง 12 ผลลัพธ์
+        </button>
+        <button class="btn-outline-gray" style="flex:1;" onclick="hideModal(); alert('ล้างค่าการค้นหาเรียบร้อย')">
+          ล้างค่า
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- 3. SCREEN FR6.4 (ผลการค้นหา - Search Results List) -->
+  <div class="screen" id="scr-6-4">
+    <div class="status-bar">
+      <span class="status-time">09:41</span>
+      <div class="status-icons">
+        <svg width="17" height="12" fill="#1A241B"><rect x="0" y="3" width="3" height="9" rx="1"/><rect x="4.5" y="2" width="3" height="10" rx="1"/><rect x="9" y="1" width="3" height="11" rx="1"/><rect x="13.5" y="0" width="3" height="12" rx="1"/></svg>
+        <svg width="16" height="12" fill="#1A241B"><path d="M8 2.5C10.2 2.5 12.2 3.4 13.6 4.9" stroke="#1A241B" stroke-width="1.5" stroke-linecap="round"/><circle cx="8" cy="10" r="1.2"/></svg>
+        <svg width="25" height="12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.5" stroke="#1A241B" stroke-opacity=".45"/><rect x="2" y="2" width="16" height="8" rx="2" fill="#1A241B"/></svg>
+      </div>
+    </div>
+
+    <div class="top-header">
+      <button class="btn-back" onclick="showScreen('scr-6-1')">
+        <svg width="18" height="18" fill="none"><path d="M11 4L5 9.5L11 15" stroke="#1A241B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div style="font-size:18px; font-weight:800; color:var(--text-primary);">ผลการค้นหา</div>
+      <button class="btn-icon-bg" onclick="showScreen('scr-6-3')">
+        <svg width="18" height="18" fill="none"><path d="M3 5H15M5 9H13M7 13H11" stroke="#1D6A39" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+
+    <div class="screen-content" style="padding-top:4px;">
+      
+      <!-- Search Bar Inside Search Results -->
+      <div class="search-container" style="margin-top:0;">
+        <svg width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M16.5 16.5L11.5 11.5M13 7.5C13 10.5376 10.5376 13 7.5 13C4.46243 13 2 10.5376 2 7.5C2 4.46243 4.46243 2 7.5 2C10.5376 2 13 4.46243 13 7.5Z" stroke="#8E9890" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <input type="text" class="search-input" placeholder="พิมพ์ชื่อร้านที่ต้องการ..." />
+      </div>
+
+      <div style="font-size:13px; color:var(--text-muted); margin-bottom:10px;">พบ 12 ร้านที่ตรงกับเงื่อนไขของคุณ</div>
+
+      <!-- Filter Pills Row -->
+      <div class="pills-row">
+        <div class="pill active"><span class="pill-dot"></span> ใกล้ล่าสุด</div>
+        <div class="pill" onclick="alert('กรองด้วย: รีวิวสูงสุด')">รีวิวสูงสุด</div>
+        <div class="pill" onclick="alert('กรองด้วย: ราคา')">ราคา</div>
+      </div>
+
+      <!-- Card 1: สลัดแฟคทอรี่ -->
+      <div class="place-card" onclick="showScreen('scr-6-5')">
+        <div class="place-icon-box">📍</div>
+        <div class="place-info">
+          <div class="place-name">สลัดแฟคทอรี่ (Salad Facto...)</div>
+          <div class="place-desc">อาหารคลีน ปราศจากสารเคมี ผักสดออร์แกนิก</div>
+          <div class="place-meta">
+            <span style="color:#F59E0B;">★ 4.8</span>
+            <span style="color:var(--text-muted);">· 95 คะแนน</span>
+          </div>
+        </div>
+        <div class="place-distance">1.2 กม.</div>
+      </div>
+
+      <!-- Card 2: แอคทีฟฟิตเนส เซนเตอร์ -->
+      <div class="place-card" onclick="showScreen('scr-6-5')">
+        <div class="place-icon-box">⭕</div>
+        <div class="place-info">
+          <div class="place-name">แอคทีฟฟิตเนส เซนเตอร์</div>
+          <div class="place-desc">เครื่องเล่นครบครัน เทรนเนอร์ผู้เชี่ยวชาญ</div>
+          <div class="place-meta">
+            <span style="color:#F59E0B;">★ 4.7</span>
+            <span style="color:var(--text-muted);">· ฟิตเนสยอดเยี่ยม</span>
+          </div>
+        </div>
+        <div class="place-distance">2.4 กม.</div>
+      </div>
+
+      <!-- Card 3: กรีนโบวล์ คาเฟ่ -->
+      <div class="place-card" onclick="showScreen('scr-6-5')">
+        <div class="place-icon-box">📍</div>
+        <div class="place-info">
+          <div class="place-name">กรีนโบวล์ คาเฟ่</div>
+          <div class="place-desc">เมนูวีแกน มังสวิรัติ แคลอรี่ต่ำ</div>
+          <div class="place-meta">
+            <span style="color:#F59E0B;">★ 4.6</span>
+            <span style="color:var(--text-muted);">· 62 คะแนน</span>
+          </div>
+        </div>
+        <div class="place-distance">2.9 กม.</div>
+      </div>
+
+      <!-- Card 4: พาวเวอร์ยิม สตูดิโอ -->
+      <div class="place-card" onclick="showScreen('scr-6-5')">
+        <div class="place-icon-box">⭕</div>
+        <div class="place-info">
+          <div class="place-name">พาวเวอร์ยิม สตูดิโอ</div>
+          <div class="place-desc">คลาสกลุ่ม โยคะ และเวทเทรนนิ่ง</div>
+          <div class="place-meta">
+            <span style="color:#F59E0B;">★ 4.5</span>
+            <span style="color:var(--text-muted);">· 40 คะแนน</span>
+          </div>
+        </div>
+        <div class="place-distance">3.1 กม.</div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- 4. SCREEN FR6.5 (หน้ารายละเอียดร้าน - Place Detail) -->
+  <div class="screen" id="scr-6-5" style="background:#E1EBE2;">
+    <div class="status-bar">
+      <span class="status-time">09:41</span>
+      <div class="status-icons">
+        <svg width="17" height="12" fill="#1A241B"><rect x="0" y="3" width="3" height="9" rx="1"/><rect x="4.5" y="2" width="3" height="10" rx="1"/><rect x="9" y="1" width="3" height="11" rx="1"/><rect x="13.5" y="0" width="3" height="12" rx="1"/></svg>
+        <svg width="16" height="12" fill="#1A241B"><path d="M8 2.5C10.2 2.5 12.2 3.4 13.6 4.9" stroke="#1A241B" stroke-width="1.5" stroke-linecap="round"/><circle cx="8" cy="10" r="1.2"/></svg>
+        <svg width="25" height="12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.5" stroke="#1A241B" stroke-opacity=".45"/><rect x="2" y="2" width="16" height="8" rx="2" fill="#1A241B"/></svg>
+      </div>
+    </div>
+
+    <!-- Header Image / Icon Placeholder Overlay -->
+    <div style="height:140px; display:flex; align-items:center; justify-content:center; position:relative;">
+      <div class="top-header" style="position:absolute; top:0; left:0; right:0;">
+        <button class="btn-back" onclick="showScreen('scr-6-4')">
+          <svg width="18" height="18" fill="none"><path d="M11 4L5 9.5L11 15" stroke="#1A241B" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+        <button class="btn-icon-bg" onclick="alert('บันทึกร้านค้านี้ลงในรายการโปรดแล้ว!')">
+          <svg width="18" height="18" fill="none"><path d="M9 15S3 10.5 3 6.5A3.5 3.5 0 019 4a3.5 3.5 0 016 2.5C15 10.5 9 15 9 15z" fill="#1D6A39"/></svg>
+        </button>
+      </div>
+
+      <div style="width:70px; height:70px; border-radius:50%; background:#CDDCD0; display:flex; align-items:center; justify-content:center;">
+        <svg width="36" height="36" fill="none"><path d="M6 26 L18 10 L30 26 Z" fill="#9FB2A2"/></svg>
+      </div>
+    </div>
+
+    <!-- Details Card Sheet -->
+    <div style="flex:1; background:var(--surface); border-top-left-radius:var(--radius-lg); border-top-right-radius:var(--radius-lg); padding:20px 20px 90px; overflow-y:auto;">
+      <div style="width:36px; height:4px; background:var(--border-color); border-radius:99px; margin:0 auto 12px;"></div>
+
+      <div style="display:inline-block; background:var(--green-light); color:var(--green-primary); font-size:11px; font-weight:700; padding:4px 10px; border-radius:var(--radius-pill); margin-bottom:8px;">
+        ร้านอาหารคลีน
+      </div>
+
+      <div style="font-size:20px; font-weight:800; color:var(--text-primary); margin-bottom:4px;">
+        สลัดแฟคทอรี่ (Salad Factory)
+      </div>
+
+      <div style="font-size:12px; color:var(--text-secondary); margin-bottom:4px;">
+        ★ 4.8 95 คะแนน · 1.2 กม. จากคุณ
+      </div>
+      <div style="font-size:12px; color:var(--text-muted); margin-bottom:4px;">
+        📍 88 ถนนสุขุมวิท เขตวัฒนา กรุงเทพฯ
+      </div>
+      <div style="font-size:12px; color:var(--green-primary); font-weight:700; margin-bottom:16px;">
+        เปิดอยู่ตอนนี้ · ปิด 21:00 น.
+      </div>
+
+      <!-- Action Buttons Row -->
+      <div style="display:flex; gap:10px; margin-bottom:20px;">
+        <button class="btn-outline" style="flex:1;" onclick="showScreen('scr-6-6')">
+          นำทาง
+        </button>
+        <button class="btn-outline-gray" style="flex:1;" onclick="alert('กำลังโทรออกไปยังเบอร์ของหน้าร้าน...')">
+          โทรหน้าร้าน
+        </button>
+      </div>
+
+      <div style="font-size:14px; font-weight:800; color:var(--text-primary); margin-bottom:6px;">เกี่ยวกับร้านนี้</div>
+      <div style="font-size:12px; color:var(--text-secondary); line-height:1.6; margin-bottom:20px;">
+        ร้านอาหารคลีนที่คัดสรรวัตถุดิบออร์แกนิก ปราศจากสารกันบูด เหมาะสำหรับผู้ที่ดูแลสุขภาพและควบคุมแคลอรี่
+      </div>
+
+      <div style="font-size:14px; font-weight:800; color:var(--text-primary); margin-bottom:10px;">รีวิวจากผู้ใช้</div>
+
+      <!-- Review Item 1 -->
+      <div style="background:var(--bg-main); border-radius:var(--radius-md); padding:12px 14px; margin-bottom:10px;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+          <span style="font-size:13px; font-weight:700; color:var(--text-primary);">คุณนภา</span>
+          <span style="font-size:12px; color:#F59E0B; font-weight:700;">★ 5.0</span>
+        </div>
+        <div style="font-size:12px; color:var(--text-secondary);">อาหารรสชาติดี สดใหม่ทุกครั้งที่มา แนะนำเลยค่ะ</div>
+      </div>
+
+      <!-- Review Item 2 -->
+      <div style="background:var(--bg-main); border-radius:var(--radius-md); padding:12px 14px; margin-bottom:20px;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+          <span style="font-size:13px; font-weight:700; color:var(--text-primary);">คุณธนา</span>
+          <span style="font-size:12px; color:#F59E0B; font-weight:700;">★ 4.5</span>
+        </div>
+        <div style="font-size:12px; color:var(--text-secondary);">คลีนจริง แคลอรี่แจ้งชัดเจน ราคาคุ้มค่า</div>
+      </div>
+
+      <!-- Main Action Button -->
+      <button class="btn-primary-green" onclick="showScreen('scr-6-6')">
+        เปิด Google Map
+      </button>
+    </div>
+  </div>
+
+
+  <!-- 5. SCREEN FR6.6 (หน้าแผนที่การนำทาง - Navigation GPS View) -->
+  <div class="screen" id="scr-6-6">
+    <!-- Top Blue GPS Banner -->
+    <div style="background:#1976D2; color:#FFFFFF; padding:44px 20px 16px; position:relative; z-index:30;">
+      <div style="display:flex; align-items:center; justify-content:space-between;">
+        <div style="display:flex; align-items:center; gap:14px;">
+          <svg width="32" height="32" fill="none"><path d="M8 20 L20 8 M20 8 H10 M20 8 V18" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <div>
+            <div style="font-size:22px; font-weight:800;">300 ม.</div>
+            <div style="font-size:13px; opacity:0.9;">เลี้ยวขวาที่ถนนสุขุมวิท</div>
+          </div>
+        </div>
+        <button style="width:32px; height:32px; border-radius:50%; background:rgba(255,255,255,0.2); border:none; color:#FFFFFF; font-size:16px; cursor:pointer;" onclick="showScreen('scr-6-5')">✕</button>
+      </div>
+    </div>
+
+    <!-- Map View Area -->
+    <div style="flex:1; background:#E5E3DB; position:relative; overflow:hidden;">
+      <!-- Vector Map Canvas Simulation -->
+      <svg width="100%" height="100%" viewBox="0 0 390 500" fill="none">
+        <path d="M-10 120 H400 M-10 240 H400 M-10 380 H400" stroke="#FFFFFF" stroke-width="24"/>
+        <path d="M80 -10 V510 M200 -10 V510 M320 -10 V510" stroke="#FFFFFF" stroke-width="20"/>
+        
+        <!-- Blue Navigation Line -->
+        <path d="M200 480 V240 Q 200 120 80 120" stroke="#4285F4" stroke-width="8" stroke-linecap="round" fill="none"/>
+
+        <!-- Pins -->
+        <g transform="translate(200, 240)">
+          <circle cx="0" cy="0" r="10" fill="#1D6A39"/>
+          <rect x="14" y="-12" width="110" height="24" rx="6" fill="#FFFFFF"/>
+          <text x="20" y="4" fill="#1A241B" font-size="9" font-weight="700">พาวเวอร์ยิม สตูดิโอ</text>
+        </g>
+
+        <g transform="translate(80, 120)">
+          <circle cx="0" cy="0" r="10" fill="#1D6A39"/>
+          <rect x="-110" y="-12" width="100" height="24" rx="6" fill="#FFFFFF"/>
+          <text x="-104" y="4" fill="#1A241B" font-size="9" font-weight="700">แอคทีฟฟิตเนส</text>
+        </g>
+
+        <!-- Speed Limit -->
+        <g transform="translate(30, 360)">
+          <circle cx="0" cy="0" r="18" fill="#FFFFFF" stroke="#D32F2F" stroke-width="3"/>
+          <text x="-8" y="5" fill="#1A241B" font-size="13" font-weight="800">50</text>
+        </g>
+      </svg>
+
+      <!-- Step Card Banner overlay on map -->
+      <div style="position:absolute; top:12px; left:16px; right:16px; background:#FFFFFF; border-radius:var(--radius-md); padding:10px 14px; box-shadow:0 2px 8px rgba(0,0,0,0.1); font-size:12px; color:var(--text-primary);">
+        จากนั้น เลี้ยวซ้ายที่ 250 ม.
+      </div>
+
+      <div style="position:absolute; top:60px; left:16px; right:16px; background:#FFFFFF; border-radius:var(--radius-md); padding:10px 14px; box-shadow:0 2px 8px rgba(0,0,0,0.1); display:flex; align-items:center; gap:10px;">
+        <span style="color:#D32F2F; font-size:18px;">📍</span>
+        <div>
+          <div style="font-size:12px; font-weight:800; color:var(--text-primary);">ปลายทาง: สลัดแฟคทอรี่ (Salad Factory)</div>
+          <div style="font-size:10px; color:var(--text-muted);">ผ่าน 3 ที่ระหว่างทาง: กรีนโบวล์ คาเฟ่ · แอคทีฟฟิตเนส...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Trip Details Card -->
+    <div style="background:#FFFFFF; padding:16px 20px 24px; border-top-left-radius:var(--radius-lg); border-top-right-radius:var(--radius-lg); display:flex; align-items:center; justify-content:space-between; box-shadow:0 -4px 16px rgba(0,0,0,0.08); position:relative; z-index:30;">
+      <div>
+        <div style="font-size:24px; font-weight:900; color:var(--green-primary);">5 นาที</div>
+        <div style="font-size:12px; color:var(--text-secondary);">1.2 กม. · ถึงเวลา 09:46 · สลัดแฟคทอรี่</div>
+      </div>
+
+      <button style="border:1px solid #D32F2F; color:#D32F2F; background:transparent; border-radius:var(--radius-pill); padding:8px 20px; font-size:14px; font-weight:700; cursor:pointer;" onclick="showScreen('scr-6-5')">
+        ออก
+      </button>
+    </div>
+  </div>
+
+
+  <!-- Global Bottom Navigation Bar (Tabs) -->
+  <div class="bottom-nav">
+    <!-- Tab 1: หน้าแรก -->
+    <button class="nav-tab" onclick="alert('เปิดหน้าแรก (Home)')">
+      <div class="nav-icon">
+        <svg width="18" height="18" fill="none"><path d="M3 8L9 3L15 8V15H3V8Z" stroke="#8E9890" stroke-width="1.8"/></svg>
+      </div>
+      <span>หน้าแรก</span>
+    </button>
+
+    <!-- Tab 2: สแกน -->
+    <button class="nav-tab" onclick="alert('ฟังก์ชันสแกนอาหารกำลังอยู่ระหว่างการพัฒนา')">
+      <div class="nav-icon">
+        <svg width="18" height="18" fill="none"><rect x="3" y="3" width="12" height="12" rx="2" stroke="#8E9890" stroke-width="1.8"/></svg>
+      </div>
+      <span>สแกน</span>
+    </button>
+
+    <!-- Tab 3: แผนอาหาร -->
+    <button class="nav-tab" onclick="alert('ฟังก์ชันแผนอาหารกำลังอยู่ระหว่างการพัฒนา')">
+      <div class="nav-icon">
+        <svg width="18" height="18" fill="none"><path d="M4 4H14V14H4V4Z" stroke="#8E9890" stroke-width="1.8"/><path d="M4 7H14" stroke="#8E9890" stroke-width="1.8"/></svg>
+      </div>
+      <span>แผนอาหาร</span>
+    </button>
+
+    <!-- Tab 4: วิเคราะห์ความเสี่ยง -->
+    <button class="nav-tab" onclick="alert('ฟังก์ชันวิเคราะห์ความเสี่ยงกำลังอยู่ระหว่างการพัฒนา')">
+      <div class="nav-icon">
+        <svg width="18" height="18" fill="none"><path d="M4 14V10M9 14V6M14 14V3" stroke="#8E9890" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </div>
+      <span>วิเคราะห์ความเสี่ยง</span>
+    </button>
+
+    <!-- Tab 5: แผนที่ร้านสุขภาพ (ACTIVE TAB) -->
+    <button class="nav-tab active" onclick="showScreen('scr-6-1')">
+      <div class="nav-icon">
+        <svg width="20" height="20" fill="none"><circle cx="10" cy="10" r="7" stroke="#1D6A39" stroke-width="2"/><circle cx="10" cy="10" r="3" fill="#1D6A39"/></svg>
+      </div>
+      <span>แผนที่ร้านสุขภาพ</span>
+    </button>
+
+    <!-- Tab 6: เพิ่มเติม -->
+    <button class="nav-tab" onclick="alert('เมนูการตั้งค่าและโปรไฟล์')">
+      <div class="nav-icon">
+        <svg width="18" height="18" fill="none"><circle cx="4" cy="9" r="1" fill="#8E9890"/><circle cx="9" cy="9" r="1" fill="#8E9890"/><circle cx="14" cy="9" r="1" fill="#8E9890"/></svg>
+      </div>
+      <span>เพิ่มเติม</span>
+    </button>
+  </div>
+
+  <!-- iPhone Bottom Bar -->
+  <div class="home-indicator"></div>
+
+</div>
+
+<script>
+/* ── Router Interaction Controller ── */
+function showScreen(screenId) {
+  // Hide all screens
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  
+  // Show target screen
+  const target = document.getElementById(screenId);
+  if (target) {
+    target.classList.add('active');
+  }
+
+  // Handle bottom navigation visibility (Hide on GPS Navigation screen FR6.6)
+  const bottomNav = document.querySelector('.bottom-nav');
+  if (screenId === 'scr-6-6') {
+    bottomNav.style.display = 'none';
+  } else {
+    bottomNav.style.display = 'flex';
+  }
+}
+
+function hideModal() {
+  const modal = document.getElementById('scr-6-3');
+  if (modal) {
+    modal.classList.remove('active');
+  }
+}
+</script>
+
+</body>
+</html>
